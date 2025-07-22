@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block title %}Analyse - {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- En-tête de la page d'analyse -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-white">
+                <i class="fas fa-chart-bar me-2"></i>
+                Analyse: {{ filename }}
+            </h2>
+            <div>
+                <button id="export-report" class="btn btn-success me-2">
+                    <i class="fas fa-download me-1"></i>
+                    Exporter le rapport
+                </button>
+                <a href="/" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Retour
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs de navigation -->
+        <ul class="nav nav-tabs nav-fill mb-4" id="analysisTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" 
+                        data-bs-target="#overview" type="button" role="tab">
+                    <i class="fas fa-tachometer-alt me-1"></i> Vue d'ensemble
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="forensic-tab" data-bs-toggle="tab" 
+                        data-bs-target="#forensic" type="button" role="tab">
+                    <i class="fas fa-shield-alt me-1"></i> Analyse Forensique
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="patterns-tab" data-bs-toggle="tab" 
+                        data-bs-target="#patterns" type="button" role="tab">
+                    <i class="fas fa-search me-1"></i> Détection de Patterns
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="anomalies-tab" data-bs-toggle="tab" 
+                        data-bs-target="#anomalies" type="button" role="tab">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Anomalies
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="visualizations-tab" data-bs-toggle="tab" 
+                        data-bs-target="#visualizations" type="button" role="tab">
+                    <i class="fas fa-chart-pie me-1"></i> Visualisations
+                </button>
+            </li>
+        </ul>
+
+        <!-- Contenu des tabs -->
+        <div class="tab-content" id="analysisTabsContent">
+            <!-- Tab Vue d'ensemble -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row" id="overview-content">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Chargement de l'analyse...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Analyse Forensique -->
+            <div class="tab-pane fade" id="forensic" role="tabpanel">
+                <div class="row" id="forensic-content">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Analyse forensique en cours...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Détection de Patterns -->
+            <div class="tab-pane fade" id="patterns" role="tabpanel">
+                <div class="row" id="patterns-content">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Détection de patterns en cours...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Anomalies -->
+            <div class="tab-pane fade" id="anomalies" role="tabpanel">
+                <div class="row" id="anomalies-content">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Détection d'anomalies en cours...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Visualisations -->
+            <div class="tab-pane fade" id="visualizations" role="tabpanel">
+                <div class="row" id="visualizations-content">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Génération des visualisations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les détails -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Contenu dynamique -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const filename = '{{ filename }}';
+    let analysisData = {};
+
+    // Chargement initial de l'analyse de base
+    loadBasicAnalysis();
+
+    // Gestion des tabs
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        const target = $(e.target).data('bs-target');
+        
+        switch(target) {
+            case '#forensic':
+                if (!analysisData.forensic) loadForensicAnalysis();
+                break;
+            case '#patterns':
+                if (!analysisData.patterns) loadPatternAnalysis();
+                break;
+            case '#anomalies':
+                if (!analysisData.anomalies) loadAnomalyAnalysis();
+                break;
+            case '#visualizations':
+                if (!analysisData.visualizations) loadVisualizations();
+                break;
+        }
+    });
+
+    // Export du rapport
+    $('#export-report').on('click', function() {
+        window.location.href = '/api/export_report/' + filename;
+    });
+
+    // Fonction de chargement de l'analyse de base
+    function loadBasicAnalysis() {
+        $.get('/api/basic_analysis/' + filename)
+            .done(function(data) {
+                analysisData.basic = data;
+                renderBasicAnalysis(data);
+            })
+            .fail(function() {
+                $('#overview-content').html(createErrorCard('Erreur lors du chargement de l\'analyse de base'));
+            });
+    }
+
+    // Fonction de chargement de l'analyse forensique
+    function loadForensicAnalysis() {
+        $.get('/api/forensic_analysis/' + filename)
+            .done(function(data) {
+                analysisData.forensic = data;
+                renderForensicAnalysis(data);
+            })
+            .fail(function() {
+                $('#forensic-content').html(createErrorCard('Erreur lors du chargement de l\'analyse forensique'));
+            });
+    }
+
+    // Fonction de chargement de l'analyse de patterns
+    function loadPatternAnalysis() {
+        $.get('/api/pattern_analysis/' + filename)
+            .done(function(data) {
+                analysisData.patterns = data;
+                renderPatternAnalysis(data);
+            })
+            .fail(function() {
+                $('#patterns-content').html(createErrorCard('Erreur lors du chargement de l\'analyse de patterns'));
+            });
+    }
+
+    // Fonction de chargement de l'analyse d'anomalies
+    function loadAnomalyAnalysis() {
+        $.get('/api/anomaly_detection/' + filename)
+            .done(function(data) {
+                analysisData.anomalies = data;
+                renderAnomalyAnalysis(data);
+            })
+            .fail(function() {
+                $('#anomalies-content').html(createErrorCard('Erreur lors du chargement de l\'analyse d\'anomalies'));
+            });
+    }
+
+    // Fonction de chargement des visualisations
+    function loadVisualizations() {
+        $.get('/api/visualizations/' + filename)
+            .done(function(data) {
+                analysisData.visualizations = data;
+                renderVisualizations(data);
+            })
+            .fail(function() {
+                $('#visualizations-content').html(createErrorCard('Erreur lors du chargement des visualisations'));
+            });
+    }
+
+    // Rendu de l'analyse de base
+    function renderBasicAnalysis(data) {
+        let html = `
+            <div class="col-12">
+                <!-- Statistiques générales -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data_summary?.rows || 0}</div>
+                            <div class="stat-label">Lignes</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data_summary?.columns || 0}</div>
+                            <div class="stat-label">Colonnes</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data_quality?.quality_score || 0}%</div>
+                            <div class="stat-label">Qualité des données</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${data.file_info?.size_mb || 0} MB</div>
+                            <div class="stat-label">Taille</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations du fichier -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-file-alt me-2"></i>Informations du fichier</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nom:</strong> ${data.file_info?.filename || 'N/A'}</p>
+                                <p><strong>Extension:</strong> ${data.file_info?.extension || 'N/A'}</p>
+                                <p><strong>Taille:</strong> ${data.file_info?.size_mb || 0} MB</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>MD5:</strong> <code>${data.file_info?.hash_md5 || 'N/A'}</code></p>
+                                <p><strong>SHA256:</strong> <code>${data.file_info?.hash_sha256?.substring(0, 16) || 'N/A'}...</code></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Qualité des données -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-check-circle me-2"></i>Qualité des données</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress mb-3">
+                            <div class="progress-bar ${getQualityColor(data.data_quality?.quality_score)}" 
+                                 style="width: ${data.data_quality?.quality_score || 0}%">
+                                ${data.data_quality?.quality_score || 0}%
+                            </div>
+                        </div>
+                        ${renderQualityIssues(data.data_quality?.issues || [])}
+                    </div>
+                </div>
+
+                <!-- Analyse des colonnes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-columns me-2"></i>Analyse des colonnes</h5>
+                    </div>
+                    <div class="card-body">
+                        ${renderColumnAnalysis(data.column_analysis || {})}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#overview-content').html(html);
+    }
+
+    // Rendu de l'analyse forensique
+    function renderForensicAnalysis(data) {
+        let html = `
+            <div class="col-12">
+                <!-- Indicateurs de sécurité -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Indicateurs de sécurité</h5>
+                    </div>
+                    <div class="card-body">
+                        ${renderSecurityIndicators(data.security_indicators || [])}
+                    </div>
+                </div>
+
+                <!-- Intégrité des données -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-check-double me-2"></i>Intégrité des données</h5>
+                    </div>
+                    <div class="card-body">
+                        ${renderDataIntegrity(data.data_integrity || {})}
+                    </div>
+                </div>
+
+                <!-- Patterns suspects -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Patterns suspects</h5>
+                    </div>
+                    <div class="card-body">
+                        ${renderSuspiciousPatterns(data.suspicious_patterns || {})}
+                    </div>
+                </div>
+
+                <!-- Timeline forensique -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-clock me-2"></i>Timeline forensique</h5>
+                    </div>
+                    <div class="card-body">
+                        ${renderForensicTimeline(data.forensic_timeline || [])}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#forensic-content').html(html);
+    }
+
+    // Fonctions utilitaires de rendu
+    function getQualityColor(score) {
+        if (score >= 80) return 'bg-success';
+        if (score >= 60) return 'bg-warning';
+        return 'bg-danger';
+    }
+
+    function renderQualityIssues(issues) {
+        if (issues.length === 0) {
+            return '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Aucun problème de qualité détecté</div>';
+        }
+        
+        let html = '<div class="alert alert-warning"><h6>Problèmes détectés:</h6><ul class="mb-0">';
+        issues.forEach(issue => {
+            html += `<li>${issue}</li>`;
+        });
+        html += '</ul></div>';
+        return html;
+    }
+
+    function renderColumnAnalysis(columns) {
+        let html = '<div class="table-responsive"><table class="table table-striped">';
+        html += '<thead><tr><th>Colonne</th><th>Type</th><th>Valeurs nulles</th><th>Valeurs uniques</th><th>Détails</th></tr></thead><tbody>';
+        
+        Object.keys(columns).forEach(col => {
+            const colData = columns[col];
+            html += `
+                <tr>
+                    <td><strong>${col}</strong></td>
+                    <td><span class="badge bg-info">${colData.type}</span></td>
+                    <td>${colData.null_percentage}%</td>
+                    <td>${colData.unique_percentage}%</td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick="showColumnDetails('${col}')">Voir détails</button></td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function renderSecurityIndicators(indicators) {
+        if (indicators.length === 0) {
+            return '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Aucun indicateur de sécurité détecté</div>';
+        }
+        
+        let html = '';
+        indicators.forEach(indicator => {
+            const alertClass = indicator.type === 'security_keyword' ? 'alert-warning' : 'alert-danger';
+            html += `<div class="alert ${alertClass}">
+                <strong>${indicator.type}:</strong> ${indicator.keyword || indicator.column} 
+                (${indicator.occurrences || indicator.count} occurrences)
+            </div>`;
+        });
+        
+        return html;
+    }
+
+    function renderDataIntegrity(integrity) {
+        let html = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Score d'intégrité: ${integrity.integrity_score || 0}%</h6>
+                    <div class="progress mb-3">
+                        <div class="progress-bar ${getQualityColor(integrity.integrity_score)}" 
+                             style="width: ${integrity.integrity_score || 0}%">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Problèmes détectés:</strong> ${integrity.issues_count || 0}</p>
+                </div>
+            </div>
+        `;
+        
+        if (integrity.issues && integrity.issues.length > 0) {
+            html += '<h6>Détails des problèmes:</h6><ul>';
+            integrity.issues.forEach(issue => {
+                html += `<li>${issue}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        return html;
+    }
+
+    function renderSuspiciousPatterns(patterns) {
+        if (patterns.patterns_found === 0) {
+            return '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Aucun pattern suspect détecté</div>';
+        }
+        
+        let html = `<div class="alert alert-warning">
+            <strong>${patterns.patterns_found} patterns suspects détectés</strong>
+        </div>`;
+        
+        if (patterns.details && patterns.details.length > 0) {
+            html += '<ul>';
+            patterns.details.forEach(detail => {
+                html += `<li>${detail}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        return html;
+    }
+
+    function renderForensicTimeline(timeline) {
+        if (timeline.length === 0) {
+            return '<p class="text-muted">Aucun événement de timeline disponible</p>';
+        }
+        
+        let html = '<div class="timeline">';
+        timeline.slice(0, 10).forEach(event => {
+            html += `
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h6>${event.event}</h6>
+                        <p>${event.description}</p>
+                        <small class="text-muted">${new Date(event.timestamp).toLocaleString()}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        return html;
+    }
+
+    function createErrorCard(message) {
+        return `
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${message}
+                </div>
+            </div>
+        `;
+    }
+
+    // Fonctions pour les autres analyses (à implémenter)
+    function renderPatternAnalysis(data) {
+        // Implémentation similaire pour les patterns
+        $('#patterns-content').html('<div class="col-12"><p>Analyse de patterns chargée</p></div>');
+    }
+
+    function renderAnomalyAnalysis(data) {
+        // Implémentation similaire pour les anomalies
+        $('#anomalies-content').html('<div class="col-12"><p>Analyse d\'anomalies chargée</p></div>');
+    }
+
+    function renderVisualizations(data) {
+        // Implémentation pour les visualisations
+        $('#visualizations-content').html('<div class="col-12"><p>Visualisations chargées</p></div>');
+    }
+
+    // Fonction globale pour afficher les détails de colonne
+    window.showColumnDetails = function(columnName) {
+        // Afficher les détails dans le modal
+        $('#detailModal').modal('show');
+    };
+});
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.25rem;
+    width: 12px;
+    height: 12px;
+    background: var(--primary-color);
+    border-radius: 50%;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -1.75rem;
+    top: 1rem;
+    width: 2px;
+    height: calc(100% + 1rem);
+    background: #dee2e6;
+}
+
+.timeline-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

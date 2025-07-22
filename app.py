@@ -8,9 +8,6 @@ from flask import Flask, render_template, request, jsonify, send_file, flash, re
 import pandas as pd
 import numpy as np
 import sqlite3
-import mysql.connector
-import psycopg2
-from sqlalchemy import create_engine
 import os
 import io
 import base64
@@ -22,10 +19,37 @@ from werkzeug.utils import secure_filename
 import hashlib
 import datetime
 import logging
-from app.core.database_analyzer import DatabaseAnalyzer
-from app.core.forensic_analyzer import ForensicAnalyzer
-from app.analyzers.pattern_detector import PatternDetector
-from app.analyzers.anomaly_detector import AnomalyDetector
+import sys
+
+# Ajouter le répertoire app au PATH
+sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+
+# Imports locaux - gestion des erreurs d'import
+try:
+    from core.database_analyzer import DatabaseAnalyzer
+    from core.forensic_analyzer import ForensicAnalyzer
+    from analyzers.pattern_detector import PatternDetector
+    from analyzers.anomaly_detector import AnomalyDetector
+except ImportError as e:
+    print(f"Erreur d'import: {e}")
+    # Créer des classes de base pour éviter les erreurs
+    class DatabaseAnalyzer:
+        def __init__(self, filepath): self.filepath = filepath
+        def analyze(self): return {"error": "Module non disponible"}
+        def generate_visualizations(self): return {}
+    
+    class ForensicAnalyzer:
+        def __init__(self, filepath): self.filepath = filepath
+        def full_analysis(self): return {"error": "Module non disponible"}
+        def get_file_metadata(self): return {}
+    
+    class PatternDetector:
+        def __init__(self, filepath): self.filepath = filepath
+        def detect_patterns(self): return {"error": "Module non disponible"}
+    
+    class AnomalyDetector:
+        def __init__(self, filepath): self.filepath = filepath
+        def detect_anomalies(self): return {"error": "Module non disponible"}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'forensic_app_secret_key_2024'
@@ -76,7 +100,7 @@ def upload_file():
             })
         except Exception as e:
             logger.error(f"Erreur lors de l'analyse: {str(e)}")
-            return jsonify({'error': f'Erreur lors de l'analyse: {str(e)}'}), 500
+            return jsonify({'error': f'Erreur lors de l\'analyse: {str(e)}'}), 500
     
     return jsonify({'error': 'Type de fichier non autorisé'}), 400
 
@@ -89,6 +113,19 @@ def analyze_file(filename):
         return redirect(url_for('index'))
     
     return render_template('analyze.html', filename=filename)
+
+@app.route('/api/basic_analysis/<filename>')
+def basic_analysis(filename):
+    """API pour l'analyse de base"""
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        analyzer = DatabaseAnalyzer(filepath)
+        analysis = analyzer.analyze()
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Erreur analyse de base: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/forensic_analysis/<filename>')
 def forensic_analysis(filename):
@@ -117,6 +154,7 @@ def pattern_analysis(filename):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/anomaly_detection/<filename>')
+def anomaly_detection(filename):
 def anomaly_detection(filename):
     """API pour la détection d'anomalies"""
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
