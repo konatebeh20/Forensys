@@ -1,0 +1,81 @@
+{
+  "name": "mingo-search-engine",
+  "version": "2.0.0",
+  "description": "🔍 Moteur de recherche moderne et intelligent en HTML, CSS, JavaScript pur",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "demo": "python3 -m http.server 8080 && open http://localhost:8080/demo.html",
+    "serve": "python3 -m http.server 8080 --bind 0.0.0.0"
+  },
+  "keywords": [
+    "search-engine",
+    "moteur-recherche",
+    "tf-idf",
+    "javascript",
+    "html5",
+    "css3",
+    "client-side",
+    "offline",
+    "privacy",
+    "recherche-floue",
+    "fuzzy-search",
+    "jaccard-similarity"
+  ],
+  "author": "Mingo Development Team",
+  "license": "MIT",
+  "homepage": "https://github.com/user/mingo-search-engine",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/mingo-search-engine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/user/mingo-search-engine/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.6"
+  },
+  "browserslist": [
+    "Chrome >= 80",
+    "Firefox >= 75",
+    "Safari >= 13",
+    "Edge >= 80"
+  ],
+  "technologies": {
+    "frontend": [
+      "HTML5",
+      "CSS3 (Variables, Grid, Flexbox)",
+      "JavaScript ES6+ (Classes, Modules, Async/Await)",
+      "Web APIs (localStorage, File API, URL API)"
+    ],
+    "algorithms": [
+      "TF-IDF (Term Frequency-Inverse Document Frequency)",
+      "Jaccard Similarity",
+      "Fuzzy String Matching",
+      "Smart Snippet Extraction"
+    ],
+    "features": [
+      "Client-side only",
+      "Offline capable",
+      "Responsive design",
+      "Dark/Light themes",
+      "Real-time suggestions",
+      "Advanced search",
+      "Import/Export",
+      "Batch operations"
+    ]
+  },
+  "files": [
+    "index.html",
+    "demo.html",
+    "style.css",
+    "script.js",
+    "README.md",
+    "GUIDE_DEMARRAGE.md"
+  ],
+  "devDependencies": {},
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
+}
